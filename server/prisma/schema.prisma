@@ -1,0 +1,222 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  BARBER
+  CUSTOMER
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PortfolioCategory {
+  FADE
+  CLASSIC
+  TEXTURED
+  BEARD
+  OTHER
+}
+
+model User {
+  id                  String         @id @default(uuid())
+  name                String
+  email               String         @unique
+  phone               String?
+  passwordHash        String
+  role                Role           @default(BARBER)
+  isActive            Boolean        @default(true)
+  forcePasswordChange Boolean        @default(false)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  barberProfile       BarberProfile?
+}
+
+model BarberProfile {
+  id                  String             @id @default(uuid())
+  userId              String             @unique
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug                String             @unique
+  title               String             @default("Master Barber")
+  bioUz               String             @db.Text
+  bioRu               String             @db.Text
+  bioEn               String             @db.Text
+  experienceYears     Int                @default(5)
+  specialties         String             // Comma-separated or JSON
+  avatarUrl           String             @default("/images/default-barber.jpg")
+  phone               String?
+  instagram           String?
+  slotDurationMinutes Int                @default(45)
+  isAcceptingBookings Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  schedules           WorkingSchedule[]
+  blockedTimes        BlockedTime[]
+  appointments        Appointment[]
+  portfolioImages     PortfolioImage[]
+}
+
+model WorkingSchedule {
+  id             String        @id @default(uuid())
+  barberId       String
+  barber         BarberProfile @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  dayOfWeek      Int           // 0=Sun, 1=Mon, ..., 6=Sat
+  isWorking      Boolean       @default(true)
+  startTime      String        @default("09:00") // HH:mm
+  endTime        String        @default("20:00") // HH:mm
+  breakStartTime String?       @default("13:00")
+  breakEndTime   String?       @default("14:00")
+
+  @@unique([barberId, dayOfWeek])
+}
+
+model BlockedTime {
+  id        String        @id @default(uuid())
+  barberId  String
+  barber    BarberProfile @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  date      String        // YYYY-MM-DD
+  startTime String?       // HH:mm (null if full day)
+  endTime   String?       // HH:mm
+  isFullDay Boolean       @default(true)
+  reason    String?
+  createdAt DateTime      @default(now())
+}
+
+model Appointment {
+  id               String            @id @default(uuid())
+  bookingReference String            @unique
+  barberId         String
+  barber           BarberProfile     @relation(fields: [barberId], references: [id], onDelete: Restrict)
+  serviceId        String?
+  service          Service?          @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  serviceName      String
+  customerName     String
+  customerPhone    String
+  customerEmail    String?
+  customerNotes    String?
+  date             String            // YYYY-MM-DD
+  startTime        String            // HH:mm
+  endTime          String            // HH:mm
+  startDateTime    DateTime          // UTC timestamp for overlap queries
+  endDateTime      DateTime
+  totalPrice       Float             @default(0.0)
+  status           AppointmentStatus @default(CONFIRMED)
+  cancelReason     String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([barberId, date])
+  @@index([barberId, startDateTime, endDateTime])
+  @@index([customerPhone])
+  @@index([bookingReference])
+}
+
+model PortfolioImage {
+  id          String            @id @default(uuid())
+  barberId    String
+  barber      BarberProfile     @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  imageUrl    String
+  titleUz     String?
+  titleRu     String?
+  titleEn     String?
+  category    PortfolioCategory @default(FADE)
+  isApproved  Boolean           @default(true)
+  isFeatured  Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+}
+
+model ShopImage {
+  id         String   @id @default(uuid())
+  imageUrl   String
+  captionUz  String?
+  captionRu  String?
+  captionEn  String?
+  isFeatured Boolean  @default(false)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
+model Service {
+  id              String        @id @default(uuid())
+  nameUz          String
+  nameRu          String
+  nameEn          String
+  descriptionUz   String        @db.Text
+  descriptionRu   String        @db.Text
+  descriptionEn   String        @db.Text
+  price           Float
+  durationMinutes Int           @default(45)
+  category        String        @default("Haircut")
+  isActive        Boolean       @default(true)
+  sortOrder       Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  appointments    Appointment[]
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String
+  email     String?
+  subject   String?
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+}
+
+model SiteContent {
+  key       String   @id
+  valueUz   String   @db.Text
+  valueRu   String   @db.Text
+  valueEn   String   @db.Text
+  category  String   @default("GENERAL")
+  updatedAt DateTime @updatedAt
+}
+
+model BusinessSettings {
+  id                   String   @id @default("default")
+  shopName             String   @default("MILLION BARBER")
+  phone                String   @default("+998 90 123 45 67")
+  addressUz            String   @default("Chust tumani, Namangan viloyati, O'zbekiston")
+  addressRu            String   @default("Чустский район, Наманганская область, Узбекистан")
+  addressEn            String   @default("Chust district, Namangan region, Uzbekistan")
+  workingHoursUz       String   @default("Har kuni: 09:00 - 21:00")
+  workingHoursRu       String   @default("Ежедневно: 09:00 - 21:00")
+  workingHoursEn       String   @default("Daily: 09:00 - 21:00")
+  timezone             String   @default("Asia/Tashkent")
+  instagramUrl         String   @default("https://instagram.com/millionbarber_chust")
+  telegramUrl          String   @default("https://t.me/millionbarber_chust")
+  mapEmbedUrl          String   @default("https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d12093.8427771239!2d71.2291!3d41.0094!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x387ca52b2b1a8d0b%3A0x86b0a1a095f939e6!2sChust%2C%20Namangan%20Region%2C%20Uzbekistan!5e0!3m2!1sen!2s!4v1710000000000!5m2!1sen!2s")
+  cancellationPolicyUz String   @default("Bandlikni bekor qilish kamida 2 soat oldin amalga oshirilishi lozim.") @db.Text
+  cancellationPolicyRu String   @default("Отмена бронирования должна быть произведена минимум за 2 часа.") @db.Text
+  cancellationPolicyEn String   @default("Cancellations must be made at least 2 hours in advance.") @db.Text
+  updatedAt            DateTime @updatedAt
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  authorName String
+  rating     Int      @default(5)
+  commentUz  String   @db.Text
+  commentRu  String   @db.Text
+  commentEn  String   @db.Text
+  isVerified Boolean  @default(false)
+  isSample   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}

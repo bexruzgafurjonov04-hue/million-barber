@@ -1,0 +1,95 @@
+# Dependencies
+node_modules/
+*/node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment Variables & Secrets
+.env
+.env.*
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+server/.env
+server/.env.*
+client/.env
+client/.env.*
+# Safe example templates (tracked in Git)
+!.env.example
+!*.env.example
+!.env.*.example
+!server/.env.example
+!client/.env.example
+
+
+# Production & Build Outputs
+dist/
+dist-ssr/
+build/
+client/dist/
+client/dist-ssr/
+out/
+.vite/
+*.tsbuildinfo
+
+# Logs & Debugging
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Database & Dump Files
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.dump
+
+# Certificates & Private Keys
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+
+# Uploads & Temporary Storage
+server/uploads/temp/
+uploads/temp/
+.temp/
+.tmp/
+# Exclude dynamic user uploads generated at runtime by Multer
+server/uploads/barbers/[0-9]*-*
+server/uploads/shop/[0-9]*-*
+server/uploads/portfolio/[0-9]*-*
+
+
+# Editor & IDE Directories
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swo
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+
